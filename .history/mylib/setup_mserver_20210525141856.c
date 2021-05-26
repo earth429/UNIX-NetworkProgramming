@@ -1,11 +1,17 @@
-#include "mylib.h"
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
-// 戻り値：ソケットのディスクリプタ
+// 戻り値：待ち受けソケットのディスクリプタ
 // port：接続先のポート番号
-int setup_server(in_port_t port) {
+// backlog：待ち受けの数
+int mserver_socket(in_port_t port, int backlog) {
+    // 変数の宣言
     struct sockaddr_in me; // 自分のソケットのアドレス
-    int soc_waiting; // 接続待ちのソケット
-    int soc; // 通信に使うソケット
+    int soc_waiting; // 待ち受けソケットのディスクリプタ
 
     // 自分のアドレスをsockaddr_in構造体に設定
     memset((char *)&me, 0, sizeof(me));
@@ -26,15 +32,15 @@ int setup_server(in_port_t port) {
     }
 
     // ソケットで接続待ちの設定
-    listen(soc_waiting, 1);
-    fprintf(stderr, "successfuly bound, now waiting.\n");
+    if (listen(soc_waiting, backlog) == -1) {
+        perror("listen");
+        return -1;
+    }
+    fprintf(stderr, "successfully setup, now waiting...\n");
 
-    // 接続要求があるまでブロック
-    soc = accept(soc_waiting, NULL, NULL);
-
-    // 接続待ちに使ったソケットを閉じる
-    close(soc_waiting);
-
-    // 通信に使うソケットのディスクリプタを返す
-    return soc;
+    // 待ち受け用のディスクリプタを返す
+    return soc_waiting;
 }
+
+
+// マルチアクセプト
